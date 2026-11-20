@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.halkatott.tv'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.halkatott.tv'
+        minSdk 21
+        // targetSdk 28 on purpose: apps targeting 29+ may not execute files from their data dir
+        // (the player-bridge helper script is exec'd from there). Android 9 TVs are unaffected either way.
+        targetSdk 28
+        versionCode 1
+        versionName '0.1.29'
+        ndk { abiFilters 'armeabi-v7a' }
+    }
+
+    externalNativeBuild {
+        cmake { path 'src/main/cpp/CMakeLists.txt' }
+    }
+
+    packaging {
+        // Extract .so files to nativeLibraryDir: libhalkatott.so is an executable that we exec().
+        jniLibs { useLegacyPackaging = true }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:1.8.2'
+}
