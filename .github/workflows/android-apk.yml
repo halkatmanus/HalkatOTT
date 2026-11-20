@@ -1,0 +1,43 @@
+name: android-apk
+on:
+  workflow_dispatch: {}
+  push:
+    tags: ["v*"]
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: armv7-linux-androideabi
+      - uses: Swatinem/rust-cache@v2
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r27c
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk
+      - name: Build native binary (armeabi-v7a)
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          cargo ndk -t armeabi-v7a --platform 24 build --release --locked --bin halkatott
+          mkdir -p android/app/src/main/jniLibs/armeabi-v7a
+          cp target/armv7-linux-androideabi/release/halkatott android/app/src/main/jniLibs/armeabi-v7a/libhalkatott.so
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk HalkatOTT-armv7.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HalkatOTT-armv7-apk
+          path: HalkatOTT-armv7.apk
